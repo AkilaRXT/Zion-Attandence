@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zion Commercial Credit - Attendance Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        window.tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { 
+                        zion: {
+                            blue: '#1e4a84', 
+                            green: '#2ca02c', 
+                            dark: '#0f2642'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        
+        #reader { 
+            background: #000 !important; 
+            border-radius: 1.5rem; 
+            overflow: hidden; 
+            border: 2px solid #1e4a84;
+            width: 100% !important;
+            min-height: 300px;
+            aspect-ratio: 1 / 1;
+            margin: 0 auto;
+        }
+        #reader video { 
+            object-fit: cover !important; 
+            width: 100% !important; 
+            height: 100% !important; 
+            border-radius: 1.5rem;
+            -webkit-playsinline: true;
+            playsinline: true;
+        }
+        #reader__scan_region { background: transparent !important; }
+        #reader__dashboard { display: none !important; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-pop { animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        .zion-gradient { background: linear-gradient(135deg, #1e4a84 0%, #2ca02c 100%); }
+        button:active { transform: scale(0.96); }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen font-bold">
+
+    <!-- Nav Bar -->
+    <nav class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.switchView('scanner')">
+                <img src="logo.png" alt="Zion Logo" class="w-10 h-10 object-contain rounded-lg" onerror="this.src='https://ui-avatars.com/api/?name=Zion&background=1e4a84&color=fff'">
+                <div class="flex flex-col leading-tight">
+                    <span class="text-lg font-black text-zion-blue dark:text-indigo-400 uppercase tracking-tighter">Zion</span>
+                    <span class="text-[9px] font-bold text-zion-green uppercase tracking-[0.1em]">Commercial Credit</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <div id="status-badge" class="px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter flex items-center gap-1.5"></div>
+                <button onclick="window.toggleTheme()" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2m10-10h-2M4 10H2m16.66-5.66l-1.41 1.41M5.75 18.25l-1.41 1.41M18.25 18.25l1.41-1.41M5.75 5.75L4.34 4.34"/></svg>
+                    <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 block dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                </button>
+                <button onclick="window.openAdminPanel()" class="bg-zion-blue dark:bg-slate-700 text-white p-2 rounded-lg shadow-lg transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-4 md:p-8">
+        <!-- SCANNER VIEW -->
+        <div id="view-scanner" class="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-pop">
+            <div class="lg:col-span-7 space-y-6">
+                <div class="bg-white dark:bg-slate-800 rounded-[2rem] border dark:border-slate-700 overflow-hidden shadow-sm">
+                    <div class="p-5 border-b dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                        <h2 class="font-bold text-slate-700 dark:text-slate-200 uppercase tracking-widest text-[10px]">Active Terminal</h2>
+                        <div id="digital-clock-large" class="font-mono font-bold text-zion-blue dark:text-indigo-400 tracking-tighter text-sm">--:--:--</div>
+                    </div>
+                    <div class="p-4 bg-slate-100 dark:bg-slate-900 relative flex items-center justify-center min-h-[350px]">
+                        <div id="reader"></div>
+                        <div id="camera-controls" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-sm transition-all text-center p-6">
+                            <button onclick="window.startCamera()" class="bg-zion-blue text-white px-10 py-5 rounded-2xl font-black shadow-2xl hover:bg-zion-dark active:scale-95 transition-all uppercase tracking-widest text-sm">Tap to Scan</button>
+                            <p class="text-[10px] text-slate-500 mt-4 uppercase font-bold tracking-widest">Pixel 6 Optimized Scanner</p>
+                        </div>
+                        <button id="stop-btn" onclick="window.stopCamera()" class="absolute top-8 right-8 bg-rose-500 text-white p-3 rounded-full hidden z-20 shadow-xl font-bold">✕</button>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 rounded-[2rem] border dark:border-slate-700 overflow-hidden shadow-sm">
+                    <div class="p-5 border-b dark:border-slate-700 font-black text-slate-700 dark:text-slate-200 uppercase text-[10px] tracking-widest">Daily Stream</div>
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-50 dark:bg-slate-900/50 text-[10px] uppercase font-black tracking-widest text-slate-400 border-b dark:border-slate-700 font-bold"><th class="px-6 py-4">Employee</th><th class="px-6 py-4">Time</th><th class="px-6 py-4">Action</th><th class="px-6 py-4">Status</th></thead>
+                            <tbody id="log-table-body" class="divide-y dark:divide-slate-700 text-sm"></tbody>
+                        </table>
+                    </div>
+                    <div id="no-logs" class="p-12 text-center text-slate-400 text-xs italic font-medium">No activity today.</div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 space-y-6">
+                <div class="bg-white dark:bg-slate-800 rounded-[2rem] border dark:border-slate-700 p-8 shadow-sm font-bold">
+                    <h2 class="font-black text-slate-700 dark:text-slate-200 uppercase text-[10px] tracking-[0.2em] mb-6 text-center font-bold">Manual Entry</h2>
+                    <select id="manual-member-select" class="w-full px-5 py-4 rounded-2xl border-2 dark:bg-slate-900 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 outline-none focus:border-zion-blue transition-all font-bold mb-4 shadow-inner"><option value="">Select Staff</option></select>
+                    <button onclick="window.markManualAttendance()" class="w-full bg-slate-100 dark:bg-slate-700 dark:text-slate-200 py-4 rounded-2xl font-black shadow-xl hover:bg-slate-200 active:scale-95 transition-all uppercase tracking-widest text-xs">Verify Entry</button>
+                </div>
+
+                <div class="zion-gradient rounded-[2rem] p-8 text-white shadow-2xl">
+                    <h3 class="font-black text-lg mb-6 flex items-center gap-2 uppercase tracking-tighter font-bold">🕒 Office Schedule</h3>
+                    <ul class="space-y-5 text-indigo-50 text-sm font-bold">
+                        <li class="flex justify-between border-b border-white/20 pb-3 font-bold"><span>Current Status</span> <span id="display-schedule-status" class="uppercase font-bold">...</span></li>
+                        <li class="flex justify-between font-bold"><span>Weekday Hours</span> <span id="info-weekday-hours" class="text-white/80 font-mono font-bold text-right">--:-- - --:--</span></li>
+                        <li class="flex justify-between font-bold"><span>Saturday Hours</span> <span id="info-saturday-hours" class="text-white/80 font-mono font-bold text-right">--:-- - --:--</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN HUB -->
+        <div id="view-admin" class="hidden space-y-8 animate-pop pb-20">
+            <div class="flex justify-between items-center border-b dark:border-slate-700 pb-6">
+                <h2 class="text-4xl font-black tracking-tighter dark:text-white uppercase font-bold">Local Admin</h2>
+                <button onclick="window.switchView('scanner')" class="bg-slate-100 dark:bg-slate-700 px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-sm font-bold">✕ Close</button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 font-bold">
+                <!-- REPORTS -->
+                <div class="bg-zion-blue rounded-[2.5rem] p-8 shadow-2xl text-white">
+                    <h3 class="font-black uppercase text-xs tracking-[0.2em] mb-8 font-bold font-bold">📊 Payroll & Reports</h3>
+                    <div class="space-y-6">
+                        <div class="bg-white/10 p-5 rounded-3xl border border-white/20 font-bold">
+                            <label class="text-[9px] font-black uppercase tracking-widest mb-3 block opacity-80 font-bold">Daily Log</label>
+                            <button onclick="window.exportAttendance('today')" class="w-full bg-white text-zion-blue py-4 rounded-2xl font-black text-sm uppercase shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 font-bold">
+                                📥 Daily CSV
+                            </button>
+                        </div>
+                        <div class="bg-white/10 p-5 rounded-3xl border border-white/20 font-bold">
+                            <label class="text-[9px] font-black uppercase tracking-widest mb-3 block opacity-80 font-bold font-bold">Payroll Report (25th to 25th)</label>
+                            <button onclick="window.generateSalaryReport()" class="w-full bg-zion-green text-white border-2 border-white/20 py-4 rounded-2xl font-black text-sm uppercase shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 font-bold font-bold font-bold">
+                                💰 Download Salary Report
+                            </button>
+                            <div class="mt-4 px-1 opacity-70 text-[9px] font-medium italic">
+                                * Uses 'Payroll Rules' below for deductions
+                            </div>
+                        </div>
+                        <div class="bg-white/10 p-5 rounded-3xl border border-white/20 font-bold">
+                            <label class="text-[9px] font-black uppercase tracking-widest mb-3 block opacity-80 font-bold font-bold">Backup</label>
+                            <input type="file" id="csv-import-file" class="hidden" accept=".csv" onchange="window.importCSV(this)">
+                            <button onclick="document.getElementById('csv-import-file').click()" class="w-full bg-slate-900/50 text-white py-4 rounded-2xl font-black text-sm uppercase border border-white/10 hover:bg-slate-900 transition-all flex items-center justify-center gap-2 font-bold font-bold">
+                                📂 Import CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SETTINGS -->
+                <div class="bg-white dark:bg-slate-800 rounded-[2.5rem] border dark:border-slate-700 p-8 shadow-sm font-bold">
+                    <h3 class="font-black text-slate-700 dark:text-slate-200 mb-6 uppercase text-xs tracking-widest border-b dark:border-slate-700 pb-3 font-bold">⚙️ System Setup</h3>
+                    <div class="grid grid-cols-2 gap-6 text-sm mb-6 font-bold">
+                        <div><label class="block text-slate-400 mb-2 font-black uppercase text-[9px]">Weekday Start</label><input type="number" id="conf-start-hour" class="w-full px-4 py-3 rounded-xl border dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" step="0.1"></div>
+                        <div><label class="block text-slate-400 mb-2 font-black uppercase text-[9px]">Weekday End</label><input type="number" id="conf-end-hour" class="w-full px-4 py-3 rounded-xl border dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" step="0.1"></div>
+                        <div><label class="block text-slate-400 mb-2 font-black uppercase text-[9px]">Sat Start</label><input type="number" id="conf-sat-start" class="w-full px-4 py-3 rounded-xl border dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" step="0.1"></div>
+                        <div><label class="block text-slate-400 mb-2 font-black uppercase text-[9px]">Sat End</label><input type="number" id="conf-sat-end" class="w-full px-4 py-3 rounded-xl border dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" step="0.1"></div>
+                    </div>
+
+                    <!-- PAYROLL RULES -->
+                    <div class="p-6 bg-emerald-50 dark:bg-slate-900/50 rounded-3xl border-2 border-zion-green/20 mb-6 space-y-4 font-bold">
+                        <label class="block text-zion-green font-black uppercase text-[9px] tracking-widest font-bold">Payroll Rules</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[9px] text-slate-400 uppercase font-bold mb-1 block">Days in Month</label>
+                                <input type="number" id="conf-salary-days" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold font-mono" placeholder="30">
+                            </div>
+                            <div>
+                                <label class="text-[9px] text-slate-400 uppercase font-bold mb-1 block">Free Leaves</label>
+                                <input type="number" id="conf-free-leaves" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold font-mono" placeholder="3">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                             <input type="checkbox" id="conf-skip-incomplete" class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                             <label for="conf-skip-incomplete" class="text-[10px] font-bold uppercase tracking-tight opacity-70">Exclude incomplete records from salary</label>
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-indigo-50 dark:bg-slate-900/50 rounded-3xl border-2 border-zion-blue/10 mb-6 space-y-3 font-bold">
+                        <label class="block text-zion-blue dark:text-indigo-300 font-black uppercase text-[9px] tracking-widest font-bold">⏱️ Scan Lockout (Hours)</label>
+                        <div class="flex items-center gap-3 font-bold">
+                            <input type="number" id="conf-lockout-hours" step="0.5" min="0" class="w-24 px-4 py-3 rounded-xl border dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold font-mono">
+                            <span class="text-xs text-slate-400 font-normal">Wait time between scans</span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border-2 border-slate-100 dark:border-slate-700 mb-6 space-y-4 font-bold">
+                        <label class="block text-slate-500 font-black uppercase text-[9px] tracking-widest font-bold font-bold">🔑 Admin PIN</label>
+                        <div class="flex gap-2">
+                            <input type="password" id="conf-admin-pin" class="flex-1 px-4 py-3 rounded-xl border dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold font-mono tracking-[0.5em] font-bold" placeholder="••••">
+                            <button onclick="window.updateAdminPin()" class="bg-zion-blue text-white px-5 py-3 rounded-xl font-black text-[10px] uppercase shadow-md hover:bg-zion-dark transition-all font-bold">Update</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border dark:border-slate-700 mb-6 font-bold text-xs uppercase"><span>Open Saturdays?</span><input type="checkbox" id="conf-saturday" class="w-6 h-6 rounded-lg text-zion-green"></div>
+                    <button onclick="window.saveConfiguration()" class="w-full bg-zion-blue dark:bg-slate-700 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-zion-dark transition-all shadow-xl font-bold font-bold">Save Changes</button>
+                </div>
+
+                <!-- REGISTRY -->
+                <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-[2.5rem] border dark:border-slate-700 p-8 shadow-sm font-bold">
+                    <h3 class="font-black text-slate-700 dark:text-slate-200 mb-8 flex justify-between uppercase text-xs tracking-widest border-b dark:border-slate-700 pb-4 font-bold">👥 Staff Registry <span id="admin-member-count" class="text-[10px] font-normal opacity-50 tracking-normal font-bold">0 Saved</span></h3>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-10 font-bold">
+                        <div class="md:col-span-4 space-y-5 font-bold">
+                            <div class="space-y-1 font-bold"><label class="text-[9px] font-black uppercase text-slate-400 ml-1 font-bold">Full Name</label><input type="text" id="admin-name" class="w-full px-5 py-4 rounded-2xl border-2 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" placeholder="Akila"></div>
+                            <div class="space-y-1 font-bold"><label class="text-[9px] font-black uppercase text-slate-400 ml-1 font-bold">Employee ID</label><input type="text" id="admin-id" class="w-full px-5 py-4 rounded-2xl border-2 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" placeholder="1001"></div>
+                            <div class="space-y-1 font-bold"><label class="text-[9px] font-black uppercase text-slate-400 ml-1 font-bold">Basic Salary</label><input type="number" id="admin-salary" class="w-full px-5 py-4 rounded-2xl border-2 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" placeholder="50000"></div>
+                            <div class="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border dark:border-slate-700 space-y-3 font-bold font-bold">
+                                <label class="text-[9px] font-black uppercase text-slate-400 font-bold">QR Data</label>
+                                <button onclick="window.generateAutoQR()" class="w-full bg-indigo-50 text-zion-blue dark:bg-indigo-900/30 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest border-2 border-indigo-100 dark:border-indigo-900 transition-all hover:bg-indigo-100 font-bold">✨ Generate QR</button>
+                                <input type="text" id="admin-url" class="w-full px-5 py-3 rounded-xl border-2 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-mono text-xs font-bold" placeholder="QR Data">
+                            </div>
+                            <input type="hidden" id="edit-original-id">
+                            <button id="admin-save-btn" onclick="window.registerMember()" class="w-full bg-zion-blue text-white py-4 rounded-2xl font-black hover:bg-zion-dark shadow-xl transition-all active:scale-95 uppercase tracking-widest text-xs font-bold font-bold font-bold">Save Member</button>
+                            <button onclick="window.cancelEdit()" id="admin-cancel-btn" class="hidden w-full text-rose-500 text-[10px] font-black uppercase text-center mt-2 underline font-bold">Cancel Edit</button>
+                        </div>
+                        <div class="md:col-span-8 pr-2 max-h-[550px] overflow-y-auto custom-scrollbar font-bold"><div id="admin-member-list" class="space-y-3 font-bold"></div></div>
+                    </div>
+                </div>
+
+                <!-- CORRECTION CENTER -->
+                <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-[2.5rem] border dark:border-slate-700 p-8 shadow-sm font-bold">
+                     <h3 class="font-black text-slate-700 dark:text-slate-200 uppercase text-xs tracking-widest border-b dark:border-slate-700 pb-6 mb-4 font-bold font-bold font-bold">📝 Log Correction Center</h3>
+                     <div class="max-h-[600px] overflow-y-auto custom-scrollbar font-bold font-bold font-bold"><table class="w-full text-left text-sm border-collapse font-bold font-bold"><tbody id="admin-log-list" class="divide-y dark:divide-slate-700 text-slate-500 font-bold font-bold"></tbody></table></div>
+                </div>
+            </div>
+            
+            <div class="flex justify-center pt-8 font-bold font-bold font-bold">
+                <button onclick="window.clearAllLogs()" class="text-rose-500 text-[9px] font-black uppercase tracking-[0.4em] hover:underline flex items-center gap-2 opacity-30 hover:opacity-100 transition-all font-bold font-bold font-bold">⚠️ Clear Local Storage History</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="pin-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-[2.5rem] p-10 shadow-2xl border dark:border-slate-700 text-center animate-pop font-bold">
+            <h3 id="pin-modal-title" class="text-2xl font-black mb-6 text-slate-800 dark:text-white uppercase tracking-tighter font-bold font-bold">Zion Admin</h3>
+            <input type="password" id="pin-input" oninput="window.checkPinAuto(this.value)" class="w-full text-center text-4xl px-4 py-6 rounded-3xl border-4 dark:bg-slate-900 border-slate-50 dark:border-slate-700 mb-8 focus:border-zion-blue outline-none dark:text-white shadow-inner font-mono tracking-widest font-bold" placeholder="••••">
+            <button onclick="window.closePinModal()" class="py-4 text-slate-400 font-black uppercase tracking-widest text-[10px] font-bold">Close</button>
+        </div>
+    </div>
+
+    <div id="qr-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-[200] hidden flex items-center justify-center p-4 font-bold">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-[3rem] p-10 shadow-2xl animate-pop text-center font-bold">
+            <h3 class="text-2xl font-black text-zion-blue mb-2 uppercase tracking-tighter font-bold">QR Ready!</h3>
+            <p id="qr-modal-name" class="text-slate-500 dark:text-slate-400 font-bold mb-8 uppercase text-xs font-bold"></p>
+            <div id="qr-gen-preview" class="mb-8 p-4 bg-white rounded-2xl shadow-inner inline-block font-bold"></div>
+            <button onclick="window.closeQRModal()" class="w-full bg-zion-blue text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl transition-transform active:scale-95 font-bold font-bold">Done</button>
+        </div>
+    </div>
+
+    <div id="missed-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[150] hidden flex items-center justify-center p-4 font-bold">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl p-8 shadow-2xl animate-pop text-slate-800 dark:text-white font-bold">
+            <h3 class="text-xl font-black mb-6 uppercase tracking-widest font-bold">Historical Entry</h3>
+            <p id="missed-emp-label" class="mb-6 text-xs font-bold text-zion-blue uppercase tracking-widest font-bold"></p>
+            <input type="hidden" id="missed-emp-id">
+            <div class="space-y-4">
+                <div><label class="text-[9px] font-black text-slate-400 uppercase mb-1 block font-bold">Date</label><input type="date" id="missed-date" class="w-full px-4 py-3 rounded-xl border dark:bg-slate-900 dark:text-white font-bold"></div>
+                <div><label class="text-[9px] font-black text-slate-400 uppercase mb-1 block font-bold">Time</label><input type="time" id="missed-time" class="w-full px-4 py-3 rounded-xl border dark:bg-slate-900 dark:text-white font-bold"></div>
+                <div class="grid grid-cols-2 gap-4 font-bold">
+                    <div><label class="text-[9px] font-black text-slate-400 uppercase mb-1 block font-bold">Action</label><select id="missed-type" class="w-full px-3 py-3 rounded-xl border dark:bg-slate-900 font-bold font-bold"><option value="IN">IN</option><option value="OUT">OUT</option></select></div>
+                    <div><label class="text-[9px] font-black text-slate-400 uppercase mb-1 block font-bold">Status</label><select id="missed-status" class="w-full px-3 py-3 rounded-xl border dark:bg-slate-900 font-bold font-bold"><option value="PRESENT">PRESENT</option><option value="LATE">LATE</option><option value="HALF DAY">HALF DAY</option><option value="FULL DAY">FULL DAY</option></select></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mt-10 font-bold"><button onclick="document.getElementById('missed-modal').classList.add('hidden')" class="py-3 text-slate-400 font-bold uppercase tracking-widest font-bold">Close</button><button onclick="window.saveMissedLog()" class="py-3 bg-zion-blue text-white rounded-xl font-black shadow-lg uppercase tracking-widest font-bold font-bold">Commit Log</button></div>
+        </div>
+    </div>
+
+    <div id="log-edit-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[120] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl p-8 border dark:border-slate-700 shadow-2xl text-slate-800 dark:text-white animate-pop">
+            <h3 class="text-xl font-black mb-8 border-b dark:border-slate-700 pb-4 uppercase text-[10px] tracking-widest font-bold">Correction Form</h3>
+            <input type="hidden" id="edit-log-id">
+            <div class="space-y-5 font-bold">
+                <div><label class="text-[9px] font-black text-slate-400 uppercase block mb-2 font-bold font-bold">Date</label><input type="date" id="edit-log-date" class="w-full px-5 py-4 rounded-2xl border-2 dark:bg-slate-900 dark:text-white outline-none font-bold"></div>
+                <div><label class="text-[9px] font-black text-slate-400 uppercase block mb-2 font-bold font-bold">Time</label><input type="time" id="edit-log-time" class="w-full px-5 py-4 rounded-2xl border-2 dark:bg-slate-900 dark:text-white outline-none font-bold"></div>
+                <div class="grid grid-cols-2 gap-4 font-bold">
+                    <div><label class="text-[9px] font-black text-slate-400 uppercase block mb-2 font-bold font-bold font-bold">Action</label><select id="edit-log-type" class="w-full px-4 py-4 rounded-2xl border-2 dark:bg-slate-900 dark:text-white font-bold font-bold font-bold"><option value="IN">IN</option><option value="OUT">OUT</option><option value="LEAVE">LEAVE</option></select></div>
+                    <div><label class="text-[9px] font-black text-slate-400 uppercase block mb-2 font-bold font-bold font-bold">Status</label><select id="edit-log-status" class="w-full px-4 py-4 rounded-2xl border-2 dark:bg-slate-900 dark:text-white font-bold font-bold font-bold"><option value="PRESENT">PRESENT</option><option value="LATE">LATE</option><option value="HALF DAY">HALF DAY</option><option value="FULL DAY">FULL DAY</option><option value="ABSENT">ABSENT</option></select></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mt-12 font-bold"><button onclick="document.getElementById('log-edit-modal').classList.add('hidden')" class="py-4 text-slate-400 font-black uppercase text-[10px] tracking-widest font-bold">Cancel</button><button onclick="window.saveLogEdit()" class="py-4 bg-zion-blue text-white rounded-2xl font-black shadow-xl uppercase text-[10px] tracking-widest font-bold">Save Changes</button></div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-8 right-8 transform translate-y-24 opacity-0 transition-all duration-300 bg-slate-900 text-white px-8 py-4 rounded-2xl z-[110] flex gap-4 items-center shadow-2xl border border-white/10 font-bold"><div id="toast-icon"></div><span id="toast-msg"></span></div>
+
+    <!-- MAIN SCRIPT (LOCAL ONLY) -->
+    <script>
+        // --- 1. CONFIG & STATE ---
+        var config = JSON.parse(localStorage.getItem('zion_local_config')) || { 
+            companyName: "Zion Commercial Credit", startHour: 8.5, endHour: 17.0, saturdayStartHour: 8.5, saturdayEndHour: 13.5, workSaturday: true, adminPin: "1234", lockoutHours: 4, skipIncomplete: false, salaryDays: 30, freeLeaves: 3
+        };
+        var members = JSON.parse(localStorage.getItem('zion_local_members')) || {};
+        var logs = JSON.parse(localStorage.getItem('zion_local_logs')) || [];
+        var html5QrCode = null;
+        var isCameraRunning = false;
+
+        // --- 2. CORE FUNCTIONS ---
+        function formatTime(d) { 
+            if(isNaN(d)) return "--:--"; 
+            const h = Math.floor(d), m = Math.round((d - h) * 60);
+            const ap = h >= 12 ? 'PM' : 'AM';
+            return `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${ap}`; 
+        }
+
+        function showToast(msg, type) { 
+            const t = document.getElementById('toast'); 
+            if(!t) return; 
+            document.getElementById('toast-msg').innerText = msg; 
+            document.getElementById('toast-icon').innerHTML = type==='error'?'❌':(type==='success'?'✅':'ℹ️'); 
+            t.classList.remove('opacity-0','translate-y-24'); 
+            setTimeout(()=>t.classList.add('opacity-0','translate-y-24'), 3500); 
+        }
+
+        function toggleTheme() { 
+            document.documentElement.classList.toggle('dark'); 
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); 
+        }
+
+        function saveLocal() {
+            localStorage.setItem('zion_local_config', JSON.stringify(config));
+            localStorage.setItem('zion_local_members', JSON.stringify(members));
+            localStorage.setItem('zion_local_logs', JSON.stringify(logs));
+        }
+
+        // --- 3. UI RENDERING ---
+        function updateUI() {
+            const now = new Date(), day = now.getDay(), h = now.getHours() + (now.getMinutes()/60);
+            const isSat = day===6, start=isSat?config.saturdayStartHour:config.startHour, end=isSat?config.saturdayEndHour:config.endHour;
+            let statusText = "Closed", badgeMsg = (day===0)?"Sunday Closed":(isSat && !config.workSaturday)?"Sat Closed":"Office Closed";
+            
+            if (day!==0 && !(isSat && !config.workSaturday)) {
+                if(h < start-2) badgeMsg = "Opens "+ formatTime(start);
+                else if(h < start) { badgeMsg="Early Arrival"; statusText="Early"; }
+                else if(h <= end) { badgeMsg=isSat?"Sat Open":"Office Open"; statusText="Open"; }
+                else { badgeMsg="Out Only"; statusText="Overtime"; }
+            }
+
+            const badge = document.getElementById('status-badge');
+            if(badge) {
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-current font-bold"></span> ${badgeMsg}`;
+                badge.className = "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all " + (statusText==='Open'?'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200 font-bold':'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 font-bold');
+            }
+
+            const schLabel = document.getElementById('display-schedule-status');
+            if(schLabel) {
+                schLabel.innerText = statusText;
+                schLabel.className = "uppercase font-black " + (statusText==='Open'?'text-zion-green font-bold':'text-rose-500 font-bold');
+            }
+
+            const wf = document.getElementById('info-weekday-hours');
+            if(wf) wf.innerText = `${formatTime(config.startHour)} - ${formatTime(config.endHour)}`;
+            const sf = document.getElementById('info-saturday-hours');
+            if(sf) sf.innerText = `${formatTime(config.saturdayStartHour)} - ${formatTime(config.saturdayEndHour)}`;
+            const clock = document.getElementById('digital-clock-large');
+            if(clock) clock.innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+            
+            const sel = document.getElementById('manual-member-select');
+            if(sel) {
+                const cur = sel.value; sel.innerHTML = '<option value="">Select Staff</option>'; 
+                Object.keys(members).forEach(k => sel.innerHTML += `<option value="${k}">${members[k].name}</option>`); 
+                sel.value = cur;
+            }
+            
+            const tbody = document.getElementById('log-table-body');
+            if(tbody) {
+                tbody.innerHTML = "";
+                const todayStr = new Date().toLocaleDateString();
+                logs.filter(l => l.date === todayStr).reverse().forEach(l => {
+                    tbody.innerHTML += `<tr class="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors font-bold font-bold"><td class="px-6 py-4 dark:text-slate-200 font-bold">${l.name}</td><td class="px-6 py-4 text-[11px] font-mono text-slate-500 font-bold">${l.time}</td><td class="px-6 py-4 font-bold"><span class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${l.type==='IN'?'bg-zion-blue text-white':'bg-slate-100 text-slate-700'} font-bold font-bold">${l.type}</span></td><td class="px-6 py-4 font-bold font-bold"><span class="px-1 text-[9px] font-black uppercase ${l.status==='LATE'?'text-amber-600':(l.status==='HALF DAY'?'text-purple-600':'')} font-bold">${l.status||'-'}</span></td></tr>`;
+                });
+                const emptyMsg = document.getElementById('no-logs');
+                if(emptyMsg) emptyMsg.classList.toggle('hidden', tbody.innerHTML !== "");
+            }
+        }
+
+        function loadAdminUI() {
+            const c = config;
+            const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+            setVal('conf-start-hour', c.startHour);
+            setVal('conf-end-hour', c.endHour);
+            setVal('conf-sat-start', c.saturdayStartHour);
+            setVal('conf-sat-end', c.saturdayEndHour);
+            setVal('conf-lockout-hours', c.lockoutHours);
+            setVal('conf-admin-pin', c.adminPin);
+            setVal('conf-salary-days', c.salaryDays);
+            setVal('conf-free-leaves', c.freeLeaves);
+            const satChk = document.getElementById('conf-saturday'); if(satChk) satChk.checked = c.workSaturday;
+            const skipChk = document.getElementById('conf-skip-incomplete'); if(skipChk) skipChk.checked = c.skipIncomplete;
+
+            const countEl = document.getElementById('admin-member-count'); if(countEl) countEl.innerText = Object.keys(members).length + " SAVED";
+            
+            const mList = document.getElementById('admin-member-list');
+            if(mList) {
+                mList.innerHTML = "";
+                Object.keys(members).forEach(k => { 
+                    const m = members[k];
+                    const sal = m.salary ? `Rs.${m.salary}` : 'No Salary';
+                    mList.innerHTML += `<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl border dark:border-slate-700 mb-3 hover:border-zion-blue transition-colors font-bold font-bold"><div><div class="font-black text-sm dark:text-slate-200 font-bold">${m.name}</div><div class="text-[10px] text-slate-400 font-mono font-bold">${k} • ${sal}</div></div><div class="flex gap-2 mt-3 sm:mt-0 font-bold font-bold"><button onclick="openMissedModal('${k}')" class="bg-zion-blue/10 text-zion-blue px-3 py-1.5 rounded-lg text-[9px] uppercase font-black hover:bg-zion-blue transition-all font-bold">Manual</button><button onclick="markManualLeave('${k}')" class="text-xs text-rose-600 font-bold hover:underline px-1 font-bold">Leave</button><button onclick="editMember('${k}')" class="px-2 hover:text-zion-blue transition-colors text-lg font-bold font-bold">✏️</button><button onclick="deleteMember('${k}')" class="px-2 hover:text-rose-500 transition-colors text-lg font-bold">🗑</button></div></div>`; 
+                });
+            }
+            const lList = document.getElementById('admin-log-list');
+            if(lList) {
+                lList.innerHTML = logs.slice().reverse().map((l, idx) => `<tr class="border-b dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold font-bold"><td class="py-4 px-2 font-mono text-[10px] font-bold font-bold">${l.date} ${l.time}</td><td class="py-4 px-2 text-xs font-bold font-bold">${l.name}</td><td class="py-4 px-2 text-right font-bold font-bold font-bold"><button onclick="editLog(${logs.length - 1 - idx})" class="mr-2 hover:text-zion-blue font-bold font-bold">✏️</button><button onclick="deleteLog(${logs.length - 1 - idx})" class="hover:text-rose-500 font-bold font-bold font-bold">✕</button></td></tr>`).join('');
+            }
+        }
+
+        // 4. ACTION HANDLERS
+        async function startCamera() { 
+            try { 
+                if(!html5QrCode) html5QrCode = new Html5Qrcode("reader"); 
+                document.getElementById('camera-controls').classList.add('hidden'); 
+                const constraints = { facingMode: "environment" };
+                const qrConfig = { fps: 20, qrbox: 250, aspectRatio: 1.0 };
+                await html5QrCode.start(constraints, qrConfig, (t) => processAttendance(t), (err) => {}); 
+                isCameraRunning = true; 
+                document.getElementById('stop-btn').classList.remove('hidden'); 
+                document.getElementById('scan-overlay').classList.remove('hidden');
+            } catch(e){ 
+                showToast("Camera access error", "error"); 
+                document.getElementById('camera-controls').classList.remove('hidden'); 
+            } 
+        }
+
+        async function stopCamera() { 
+            if(html5QrCode && isCameraRunning){ try{ await html5QrCode.stop(); isCameraRunning=false; } catch(e){} } 
+            document.getElementById('camera-controls').classList.remove('hidden'); 
+            document.getElementById('stop-btn').classList.add('hidden'); 
+            document.getElementById('scan-overlay').classList.add('hidden');
+        }
+
+        function processAttendance(id) {
+            if(!members[id]) return showToast("QR ID Unknown", "error");
+            const name = members[id].name, now = new Date();
+            const dateStr = now.toLocaleDateString();
+            const last = logs.slice().reverse().find(l => l.id === id && l.date === dateStr);
+            let type = (!last || last.type === 'OUT') ? 'IN' : 'OUT';
+
+            if (type === 'OUT') {
+                const lockout = (config.lockoutHours || 4) * 3600000;
+                if (Date.now() - last.timestamp < lockout) {
+                    const rem = lockout - (Date.now() - last.timestamp);
+                    return showToast(`Wait ${Math.floor(rem/3600000)}h ${Math.floor((rem%3600000)/60000)}m`, "error");
+                }
+            }
+            const day = now.getDay(), time = now.getHours() + (now.getMinutes()/60);
+            const isSat = day===6, start=isSat?config.saturdayStartHour:config.startHour, end=isSat?config.saturdayEndHour:config.endHour;
+            let status = (type === 'IN') ? (time > start ? 'LATE' : 'PRESENT') : (time < end ? 'HALF DAY' : 'FULL DAY');
+            
+            logs.push({ name, id, time: now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), date: dateStr, type, status, timestamp: Date.now() });
+            saveLocal(); updateUI(); showToast(`${name}: Recorded ${type}`, "success");
+        }
+
+        function registerMember() {
+            const n = document.getElementById('admin-name').value.trim();
+            const i = document.getElementById('admin-id').value.trim();
+            const u = document.getElementById('admin-url').value.trim();
+            const s = document.getElementById('admin-salary').value.trim(); 
+            const oid = document.getElementById('edit-original-id').value;
+            if(!n || !i) return showToast("Need Name & ID","error");
+            if(oid && oid !== i) delete members[oid];
+            members[i] = { name: n, url: u || i, salary: s || 0 }; 
+            saveLocal(); cancelEdit(); loadAdminUI(); showToast("Member Saved", "success");
+        }
+
+        function saveConfiguration() {
+            config.startHour = parseFloat(document.getElementById('conf-start-hour').value);
+            config.endHour = parseFloat(document.getElementById('conf-end-hour').value);
+            config.saturdayStartHour = parseFloat(document.getElementById('conf-sat-start').value);
+            config.saturdayEndHour = parseFloat(document.getElementById('conf-sat-end').value);
+            config.lockoutHours = parseFloat(document.getElementById('conf-lockout-hours').value);
+            config.salaryDays = parseFloat(document.getElementById('conf-salary-days').value) || 30;
+            config.freeLeaves = parseFloat(document.getElementById('conf-free-leaves').value) || 3;
+            config.workSaturday = document.getElementById('conf-saturday').checked;
+            config.skipIncomplete = document.getElementById('conf-skip-incomplete').checked;
+            config.adminPin = document.getElementById('conf-admin-pin').value;
+            saveLocal(); showToast("Settings Saved", "success"); updateUI();
+        }
+
+        function updateLocalConfig(key, val) { config[key] = val; saveLocal(); }
+        function deleteMember(id) { if(confirm("Permanently delete?")) { delete members[id]; saveLocal(); loadAdminUI(); updateUI(); } }
+        function deleteLog(idx) { if(confirm("Remove?")) { logs.splice(idx, 1); saveLocal(); loadAdminUI(); updateUI(); } }
+        function clearAllLogs() { if(confirm("DANGER: This will delete ALL history forever?")) { logs=[]; members={}; saveLocal(); loadAdminUI(); updateUI(); } }
+
+        function switchView(v) { 
+            const sc = document.getElementById('view-scanner'), ad = document.getElementById('view-admin');
+            if(isCameraRunning) stopCamera();
+            if(sc && ad) {
+                sc.classList.toggle('hidden', v==='admin'); ad.classList.toggle('hidden', v!=='admin');
+                if(v==='admin') loadAdminUI(); else updateUI();
+            }
+        }
+
+        function checkPinAuto(v) { if(v === config.adminPin) { document.getElementById('pin-modal').classList.add('hidden'); if(window.pinCallback) window.pinCallback(); } }
+        function requestPin(cb) { window.pinCallback=cb; document.getElementById('pin-modal').classList.remove('hidden'); document.getElementById('pin-input').value=''; setTimeout(()=>document.getElementById('pin-input').focus(),100); }
+        function openAdminPanel() { requestPin(() => switchView('admin')); }
+        function closePinModal() { document.getElementById('pin-modal').classList.add('hidden'); }
+        function closeQRModal() { document.getElementById('qr-modal').classList.add('hidden'); }
+        function cancelEdit() { document.getElementById('admin-name').value=''; document.getElementById('admin-id').value=''; document.getElementById('admin-url').value=''; document.getElementById('admin-salary').value=''; document.getElementById('edit-original-id').value=''; document.getElementById('admin-cancel-btn').classList.add('hidden'); document.getElementById('admin-save-btn').innerText = "Save Member"; }
+        function editMember(id) { const m = members[id]; document.getElementById('admin-name').value = m.name; document.getElementById('admin-id').value = id; document.getElementById('admin-url').value = m.url; document.getElementById('admin-salary').value = m.salary || ''; document.getElementById('edit-original-id').value = id; document.getElementById('admin-cancel-btn').classList.remove('hidden'); document.getElementById('admin-save-btn').innerText = "Update Record"; }
+        function markManualAttendance() { const s=document.getElementById('manual-member-select'); if(s && s.value) processAttendance(s.value); }
+        function generateAutoQR() { const n=document.getElementById('admin-name').value, i=document.getElementById('admin-id').value; if(!n||!i) return showToast("Need Name/ID","error"); document.getElementById('admin-url').value=i; const c=document.getElementById('qr-gen-preview'); c.innerHTML=""; new QRCode(c,{text:i,width:250,height:250,colorDark:"#1e4a84"}); document.getElementById('qr-modal-name').innerText=n; document.getElementById('qr-modal').classList.remove('hidden'); }
+        function updateAdminPin() { const pin = document.getElementById('conf-admin-pin').value; if(pin.length < 4) return showToast("Too Short", "error"); config.adminPin = pin; saveLocal(); showToast("Updated", "success"); }
+        
+        function exportAttendance(r) { 
+            const now = new Date(); const dateStr = now.toISOString().split('T')[0]; 
+            let d = logs; if(r==='today') d = logs.filter(l => l.date === now.toLocaleDateString()); 
+            const csv = "Date,Name,ID,Time,Type,Status\n" + d.map(l => `${l.date},"${l.name}",${l.id},${l.time},${l.type},${l.status}`).join("\n");
+            const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=`Attendance_${dateStr}.csv`; a.click(); 
+        }
+        
+        function generateSalaryReport() { 
+            const now = new Date(); const dateStr = now.toISOString().split('T')[0];
+            const sR = new Date(now.getFullYear(), now.getMonth()-1, 25), eR = new Date(now.getFullYear(), now.getMonth(), 25); 
+            
+            const reportData = {};
+            Object.keys(members).forEach(id => {
+                reportData[id] = { name: members[id].name, salary: parseFloat(members[id].salary) || 0, leaves: 0 };
+            });
+
+            logs.forEach(l => {
+                const ld = new Date(l.timestamp);
+                if (ld >= sR && ld <= eR) {
+                    if (l.type === 'LEAVE' || l.status === 'ABSENT') {
+                        if (reportData[l.id]) reportData[l.id].leaves++;
+                    }
+                }
+            });
+
+            let csvContent = "ID,Name,Basic Salary,Leaves Taken,Deduction,Final Payable\n";
+            Object.keys(reportData).forEach(id => {
+                const d = reportData[id];
+                const daysInMonth = config.salaryDays || 30;
+                const freeLeaves = config.freeLeaves || 3;
+                const dailyRate = d.salary / daysInMonth; 
+                const chargeableLeaves = Math.max(0, d.leaves - freeLeaves);
+                const deduction = chargeableLeaves * dailyRate;
+                const finalPay = Math.max(0, d.salary - deduction);
+                csvContent += `${id},"${d.name}",${d.salary},${d.leaves},${deduction.toFixed(2)},${finalPay.toFixed(2)}\n`;
+            });
+
+            const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csvContent],{type:'text/csv'})); a.download=`Salary_Report_${dateStr}.csv`; a.click(); 
+        }
+
+        function openMissedModal(id) { document.getElementById('missed-emp-id').value = id; document.getElementById('missed-emp-label').innerText = "For: " + members[id].name; document.getElementById('missed-date').valueAsDate = new Date(); document.getElementById('missed-modal').classList.remove('hidden'); }
+        function saveMissedLog() {
+            const id = document.getElementById('missed-emp-id').value, d = document.getElementById('missed-date').value, t = document.getElementById('missed-time').value;
+            if(!d || !t) return showToast("Incomplete input", "error");
+            const dp = d.split('-'), fd = `${dp[2]}/${dp[1]}/${dp[0]}`, tp = t.split(':');
+            logs.push({ name: members[id].name, id, time: `${tp[0]%12||12}:${tp[1]} ${tp[0]>=12?'PM':'AM'}`, date: fd, type: document.getElementById('missed-type').value, status: document.getElementById('missed-status').value, timestamp: new Date(dp[0], dp[1]-1, dp[2], tp[0], tp[1]).getTime() });
+            logs.sort((a,b)=>a.timestamp-b.timestamp); saveLocal(); document.getElementById('missed-modal').classList.add('hidden'); loadAdminUI(); showToast("Saved", "success");
+        }
+        
+        // --- ADDED MISSING FUNCTION ---
+        function markManualLeave(id) {
+            if(!members[id]) return;
+            const name = members[id].name;
+            const now = new Date();
+            logs.push({ 
+                name, 
+                id, 
+                time: "--:--", 
+                date: now.toLocaleDateString(), 
+                type: 'LEAVE', 
+                status: 'ABSENT', 
+                timestamp: now.getTime() 
+            });
+            saveLocal(); 
+            updateUI(); // Ensure UI reflects the change if visible
+            showToast("Absent Marked", "info");
+        }
+
+        function editLog(idx) { const l = logs[idx]; document.getElementById('edit-log-id').value = idx; document.getElementById('edit-log-date').value = l.date; document.getElementById('edit-log-time').value = l.time; document.getElementById('edit-log-type').value = l.type; document.getElementById('edit-log-status').value = l.status; document.getElementById('log-edit-modal').classList.remove('hidden'); };
+        function saveLogEdit() { const idx = document.getElementById('edit-log-id').value; logs[idx].date = document.getElementById('edit-log-date').value; logs[idx].time = document.getElementById('edit-log-time').value; logs[idx].type = document.getElementById('edit-log-type').value; logs[idx].status = document.getElementById('edit-log-status').value; saveLocal(); document.getElementById('log-edit-modal').classList.add('hidden'); loadAdminUI(); };
+        function importCSV(input) {
+            const file = input.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result, rows = text.split('\n').slice(1);
+                rows.forEach(row => { const cols = row.split(','); if (cols.length >= 6) logs.push({ name: cols[1].replace(/"/g, '').trim(), id: cols[2].trim(), time: cols[3].trim(), date: cols[0].trim(), type: cols[4].trim(), status: cols[5].trim(), timestamp: Date.now() }); });
+                saveLocal(); loadAdminUI(); showToast("Imported", "success"); input.value = ""; 
+            };
+            reader.readAsText(file);
+        }
+
+        // --- GOOGLE DRIVE HELPER ---
+        // This is a placeholder function to allow the "Connect Drive" button to exist
+        // without crashing, but informs the user that cloud sync is disabled.
+        function handleAuthClick() {
+            showToast("Cloud Disabled in Local Mode", "info");
+        }
+        function uploadToDrive() {
+            showToast("Cloud Disabled in Local Mode", "info");
+        }
+        function openFixModal() {
+            document.getElementById('fix-modal').classList.remove('hidden');
+            // Mock value for local mode
+            document.getElementById('origin-link-val').value = window.location.href;
+        }
+        function closeFixModal() {
+             document.getElementById('fix-modal').classList.add('hidden');
+        }
+        function copyFixLink() {
+            const input = document.getElementById('origin-link-val');
+            input.select();
+            document.execCommand('copy');
+            showToast("Link Copied", "success");
+        }
+
+        // 5. BOOT ENGINE
+        window.onload = () => {
+            const theme = localStorage.getItem('theme');
+            if(theme === 'dark') document.documentElement.classList.add('dark');
+            updateUI();
+            setInterval(() => { updateUI(); }, 1000);
+            
+            // Attach globals to window to be absolutely sure buttons find them
+            window.startCamera = startCamera;
+            window.stopCamera = stopCamera;
+            window.switchView = switchView;
+            window.toggleTheme = toggleTheme;
+            window.openAdminPanel = openAdminPanel;
+            window.closePinModal = closePinModal;
+            window.checkPinAuto = checkPinAuto;
+            window.registerMember = registerMember;
+            window.cancelEdit = cancelEdit;
+            window.saveConfiguration = saveConfiguration;
+            window.updateAdminPin = updateAdminPin;
+            window.generateAutoQR = generateAutoQR;
+            window.closeQRModal = closeQRModal;
+            window.markManualAttendance = markManualAttendance;
+            window.exportAttendance = exportAttendance;
+            window.generateSalaryReport = generateSalaryReport;
+            window.importCSV = importCSV;
+            window.updateLocalConfig = updateLocalConfig;
+            window.editMember = editMember;
+            window.deleteMember = deleteMember;
+            window.openMissedModal = openMissedModal;
+            window.saveMissedLog = saveMissedLog;
+            // Ensure markManualLeave is attached
+            window.markManualLeave = markManualLeave;
+            window.editLog = editLog;
+            window.saveLogEdit = saveLogEdit;
+            window.deleteLog = deleteLog;
+            window.clearAllLogs = clearAllLogs;
+            window.handleAuthClick = handleAuthClick;
+            window.uploadToDrive = uploadToDrive;
+            window.openFixModal = openFixModal;
+            window.closeFixModal = closeFixModal;
+            window.copyFixLink = copyFixLink;
+        };
+    </script>
+</body>
+</html>
